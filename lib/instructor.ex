@@ -418,6 +418,22 @@ defmodule Instructor do
   end
 
   defp do_chat_completion(response_model, params, config) do
+    # Ensure an unique ref or reusing a ref from related do_chat_completion calls
+    {ref, params} = Keyword.pop(params, :ref, make_ref())
+    start = System.monotonic_time()
+
+    :telemetry.execute(
+      [:instructor, :chat_completion, :start],
+      %{},
+      %{
+        ref: ref,
+        system_time: System.system_time(),
+        response_model: response_model,
+        params: params,
+        config: config
+      }
+    )
+
     validation_context = Keyword.get(params, :validation_context, %{})
     max_retries = Keyword.get(params, :max_retries)
     mode = Keyword.get(params, :mode, :tools)
@@ -435,9 +451,31 @@ defmodule Instructor do
            {cast_all(model, params), raw_response},
          {%Ecto.Changeset{valid?: true} = changeset, _raw_response} <-
            {call_validate(response_model, changeset, validation_context), raw_response} do
+      :telemetry.execute(
+        [:instructor, :chat_completion, :stop],
+        %{duration: System.monotonic_time() - start},
+        %{
+          ref: ref,
+          system_time: System.system_time(),
+          params: params,
+          raw_response: raw_response
+        }
+      )
+
       {:ok, changeset |> Ecto.Changeset.apply_changes()}
     else
       {%Ecto.Changeset{} = changeset, raw_response} ->
+        :telemetry.execute(
+          [:instructor, :chat_completion, :validation_error],
+          %{duration: System.monotonic_time() - start},
+          %{
+            ref: ref,
+            system_time: System.system_time(),
+            params: params,
+            raw_response: raw_response
+          }
+        )
+
         if max_retries > 0 do
           errors = Instructor.ErrorFormatter.format_errors(changeset)
 
@@ -463,12 +501,24 @@ defmodule Instructor do
                 ]
             end)
 
+          params = Keyword.put(params, :ref, ref)
           do_chat_completion(response_model, params, config)
         else
           {:error, changeset}
         end
 
       {:error, reason} ->
+        :telemetry.execute(
+          [:instructor, :chat_completion, :adapter_error],
+          %{duration: System.monotonic_time() - start},
+          %{
+            ref: ref,
+            system_time: System.system_time(),
+            params: params,
+            error_reason: reason
+          }
+        )
+
         {:error, reason}
 
       e ->
