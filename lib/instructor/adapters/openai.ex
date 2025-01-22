@@ -28,7 +28,15 @@ defmodule Instructor.Adapters.OpenAI do
       case params do
         # OpenAI's json_schema mode doesn't support format or pattern attributes
         %{response_format: %{json_schema: %{schema: _schema}}} ->
-          update_in(params, [:response_format, :json_schema, :schema], &normalize_json_schema/1)
+          update_in(params, [:response_format, :json_schema, :schema], fn schema ->
+            JSONSchema.traverse_and_update(schema, fn
+              %{"type" => _} = x when is_map_key(x, "format") or is_map_key(x, "pattern") ->
+                Map.drop(x, ["format", "pattern"])
+
+              x ->
+                x
+            end)
+          end)
 
         _ ->
           params
