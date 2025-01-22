@@ -246,7 +246,7 @@ defmodule Instructor.JSONSchema do
   defp for_type(:id), do: %{type: "integer", description: "Integer, e.g. 1"}
   defp for_type(:binary_id), do: %{type: "string"}
   defp for_type(:integer), do: %{type: "integer", description: "Integer, e.g. 1"}
-  defp for_type(:float), do: %{type: "number", description: "Float, e.g. 1.27"}
+  defp for_type(:float), do: %{type: "number", description: "Float, e.g. 1.27", format: "float"}
   defp for_type(:boolean), do: %{type: "boolean", description: "Boolean, e.g. true"}
   defp for_type(:string), do: %{type: "string", description: "String, e.g. 'hello'"}
   # defp for_type(:binary), do: %{type: "unsupported"}
