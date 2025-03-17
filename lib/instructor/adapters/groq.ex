@@ -1,10 +1,31 @@
 defmodule Instructor.Adapters.Groq do
   @moduledoc """
   Adapter for Groq Cloud API.  Using the OpenAI API compatible endpoint.
+
+  ## Configuration
+
+  ```elixir
+  config :instructor, adapter: Instructor.Adapters.Groq, groq: [
+    api_key: "your_api_key" # Will use GROQ_API_KEY environment variable if not provided
+  ]
+  ```
+
+  or at runtime:
+
+  ```elixir
+  Instructor.chat_completion(..., [
+    adapter: Instructor.Adapters.Groq,
+    api_key: "your_api_key" # Will use GROQ_API_KEY environment variable if not provided
+  ])
+  ```
+
+  For more configurations, see Instructor.Adapters.OpenAI for more details as this adapter inherits functionality from it.
+  To get a Groq API key, see [Groq Cloud](https://groq.com/cloud).
   """
-  alias Instructor.Adapters
 
   @behaviour Instructor.Adapter
+  alias Instructor.Adapters
+
   @supported_modes [:tools]
 
   @impl true
@@ -27,6 +48,7 @@ defmodule Instructor.Adapters.Groq do
   defp config(base_config) do
     default_config = [
       api_url: "https://api.groq.com/openai",
+      api_key: System.get_env("GROQ_API_KEY"),
       http_options: [receive_timeout: 60_000]
     ]
 

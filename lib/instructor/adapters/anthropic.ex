@@ -1,9 +1,29 @@
 defmodule Instructor.Adapters.Anthropic do
   @moduledoc """
   Anthropic adapter for Instructor.
-  """
-  @behaviour Instructor.Adapter
 
+  ## Configuration
+
+  ```elixir
+  config :instructor, adapter: Instructor.Adapters.Anthropic, anthropic: [
+    api_key: "your_api_key" # Will use ANTHROPIC_API_KEY environment variable if not provided
+  ]
+  ```
+
+  or at runtime:
+
+  ```elixir
+  Instructor.chat_completion(..., [
+    adapter: Instructor.Adapters.Anthropic,
+    api_key: "your_api_key" # Will use ANTHROPIC_API_KEY environment variable if not provided
+  ])
+  ```
+
+  To get an Anthropic API key, see [Anthropic](https://console.anthropic.com/settings/keys).
+  """
+
+  @behaviour Instructor.Adapter
+  alias Instructor.Adapters
   alias Instructor.SSEStreamParser
 
   @impl true
@@ -125,6 +145,9 @@ defmodule Instructor.Adapters.Anthropic do
     args
   end
 
+  @impl true
+  defdelegate reask_messages(raw_response, params, config), to: Adapters.OpenAI
+
   defp url(config), do: api_url(config) <> "/v1/messages"
 
   defp api_url(config), do: Keyword.fetch!(config, :api_url)
@@ -136,6 +159,7 @@ defmodule Instructor.Adapters.Anthropic do
   defp config(base_config) do
     default_config = [
       api_url: "https://api.anthropic.com/",
+      api_key: System.get_env("ANTHROPIC_API_KEY"),
       http_options: [receive_timeout: 60_000]
     ]
 

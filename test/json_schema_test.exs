@@ -9,6 +9,7 @@ defmodule JSONSchemaTest do
   test "schema" do
     defmodule Demo do
       use Ecto.Schema
+      use Instructor
 
       @primary_key false
       schema "demo" do
@@ -42,7 +43,7 @@ defmodule JSONSchemaTest do
   test "embedded_schema" do
     defmodule Demo do
       use Ecto.Schema
-
+      use Instructor
       @primary_key false
       embedded_schema do
         field(:string, :string)
@@ -73,12 +74,12 @@ defmodule JSONSchemaTest do
 
   test "includes documentation" do
     json_schema =
-      JSONSchema.from_ecto_schema(InstructorTest.DemoWithDocumentation)
+      JSONSchema.from_ecto_schema(InstructorTest.DemoWithUseInstructorAndNewDoc)
       |> Jason.decode!()
 
     expected_json_schema =
       %{
-        "description" => "Hello world\n",
+        "description" => "Hello world",
         "properties" => %{
           "string" => %{
             "title" => "string",
@@ -87,7 +88,7 @@ defmodule JSONSchemaTest do
           }
         },
         "required" => ["string"],
-        "title" => "InstructorTest.DemoWithDocumentation",
+        "title" => "InstructorTest.DemoWithUseInstructorAndNewDoc",
         "type" => "object",
         "additionalProperties" => false
       }
@@ -95,15 +96,26 @@ defmodule JSONSchemaTest do
     assert json_schema == expected_json_schema
   end
 
-  test "issues deprecation warning for schema with @doc but no @llm_doc" do
+  test "issues deprecation warning for schema without use Instructor" do
     log =
       capture_log(fn ->
-        JSONSchema.from_ecto_schema(InstructorTest.DemoWithDocumentation)
+        JSONSchema.from_ecto_schema(InstructorTest.DemoRawEctoSchema)
       end)
       |> String.downcase()
       |> String.trim()
 
-    assert log =~ String.downcase("using Ecto Schemas with the @doc attribute is deprecated")
+    assert log =~ String.downcase("using Ecto Schemas without `use Instructor` is deprecated")
+  end
+
+  test "issues deprecation warning for schema with @doc but no @llm_doc" do
+    log =
+      capture_log(fn ->
+        JSONSchema.from_ecto_schema(InstructorTest.DemoWithUseInstructorButOldDoc)
+      end)
+      |> String.downcase()
+      |> String.trim()
+
+    assert log =~ String.downcase("using Ecto Schemas with the `@doc` attribute is deprecated")
   end
 
   test "include new documentation using @llm_doc" do
@@ -128,7 +140,7 @@ defmodule JSONSchemaTest do
   test "basic types" do
     defmodule Demo do
       use Ecto.Schema
-
+      use Instructor
       # Be explicit about all fields in this test
       @primary_key false
       embedded_schema do
@@ -283,7 +295,7 @@ defmodule JSONSchemaTest do
   test "embedded schemas" do
     defmodule Embedded do
       use Ecto.Schema
-
+      use Instructor
       @primary_key false
       embedded_schema do
         field(:string, :string)
@@ -292,7 +304,7 @@ defmodule JSONSchemaTest do
 
     defmodule Demo do
       use Ecto.Schema
-
+      use Instructor
       @primary_key false
       embedded_schema do
         embeds_one(:embedded, Embedded)
@@ -339,6 +351,7 @@ defmodule JSONSchemaTest do
   test "has_one" do
     defmodule Child do
       use Ecto.Schema
+      use Instructor
 
       schema "child" do
         field(:string, :string)
@@ -347,6 +360,7 @@ defmodule JSONSchemaTest do
 
     defmodule Demo do
       use Ecto.Schema
+      use Instructor
 
       schema "demo" do
         has_one(:child, Child)
@@ -401,6 +415,7 @@ defmodule JSONSchemaTest do
   test "has_many" do
     defmodule Child do
       use Ecto.Schema
+      use Instructor
 
       schema "child" do
         field(:string, :string)
@@ -409,6 +424,7 @@ defmodule JSONSchemaTest do
 
     defmodule Demo do
       use Ecto.Schema
+      use Instructor
 
       schema "demo" do
         has_many(:children, Child)
