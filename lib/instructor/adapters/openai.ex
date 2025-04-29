@@ -229,7 +229,7 @@ defmodule Instructor.Adapters.OpenAI do
       api_path: "/v1/chat/completions",
       api_key: System.get_env("OPENAI_API_KEY"),
       auth_mode: :bearer,
-      http_options: [receive_timeout: 60_000]
+      http_options: [receive_timeout: 120_000]
     ]
 
     Keyword.merge(default_config, base_config)
